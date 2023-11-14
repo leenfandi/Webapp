@@ -30,11 +30,6 @@ Route::group([ 'prefix' => 'user', ], function ($router) {
     Route::delete('deletemyaccount',[AuthController::class,'DeleteMyAccount']);
 
  });
- Route::group([ 'prefix' => 'admin', ], function ($router) {
-
-    Route::post('register',[AuthController::class,'registeradmin']);
-    Route::post('login',[AuthController::class,'login']);
- });
 
  Route::middleware('auth:api')->group(function ()
  {
@@ -42,7 +37,7 @@ Route::group([ 'prefix' => 'user', ], function ($router) {
  Route::post('updatestatus/{fileid}', [FileController::class, 'updateStatus']);
  Route::post('reservefile',[FileController::class,'reserveFile']);
  Route::delete('delete-free-files/{id}', [FileController::class, 'deleteFile']);
- Route::get('download/{fileid}', [FileController::class, 'downloadFile']);
+ Route::post('download', [FileController::class, 'downloadFile']);
  });
 
 

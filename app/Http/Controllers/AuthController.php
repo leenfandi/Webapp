@@ -27,64 +27,7 @@ class AuthController extends Controller
     //    $this ->db_mysql= config('database.connections.mysql.database');
     // $this->middleware('auth:api',['except'=>['login','register']]);
    // }
-   /*public function register(Request $request)
-   {
-    $request->all();
-    $data = [
-        'name' => $request->name,
-        'email' => $request->email,
-        'password' => $request->password,
-    ];
-
-       $result = $this->exampleService->validateData($data);
-
-       if (!isset($result['success']) || !$result['success']) {
-           return response()->json([
-               'success' => false,
-               'message' => 'Validation failed',
-           ], 400);
-       }
-
-       $user = User::create([
-           'name' => $request->name,
-           'email' => $request->email,
-           'password' => Hash::make($request->password),
-       ]);
-
-       $role = Role::where('name', 'user')->first();
-       $user->assignRole($role);
-
-       return response()->json([
-           'message' => 'User created successfully',
-           'user' => $user,
-           'role' => $role->name,
-           'token' => $user->password,
-       ], 200);
-   }
-   public function registeradmin(Request $request)
-{
-    $request->validate([
-        'name' => 'required',
-        'email' => 'required|email|unique:users',
-        'password' => 'required|min:6',
-    ]);
-
-    $user = User::create([
-        'name' => $request->name,
-        'email' => $request->email,
-        'password' => Hash::make($request->password),
-    ]);
-
-    $role = Role::where('name', 'admin')->first();
-    $user->assignRole($role);
-
-    return response()->json([
-        'message' => 'Admin user created successfully',
-        'user' => $user,
-        'token' => $user->password,
-    ], 200);
-}
-*/
+  
 
    public function register(Request $request)
    {
@@ -119,37 +62,7 @@ class AuthController extends Controller
    }
 
 
-    /**
-     * Login
-     */
-   /* public function login(Request $request)
-    {
-        $credentials = $request->only('email', 'password');
 
-        if (!auth()->attempt($credentials)) {
-            return response()->json(['message' => 'Invalid credentials'], 400);
-        }
-
-        $user = auth()->user();
-        $role = '';
-
-        if ($user->hasRole('user')) {
-            $role = 'user';
-        }
-
-        if ($user->hasRole('admin')) {
-            $role = 'admin';
-        }
-
-        $token = auth()->login($user);
-
-        return response()->json([
-            'message' => 'Login successful',
-            'data' => $user,
-            'Role' => $role,
-            'token' => $token,
-        ], 200);
-    }*/
 
     public function login(Request $request)
     {

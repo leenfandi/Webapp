@@ -42,7 +42,7 @@ class FileController extends Controller
         $extension = $file->getClientOriginalExtension();
         $filename = $hh . '.' . $extension;
 
-        $filePath = $file->storeAs('public/uploads/publicfiles' . $userId, $filename);
+        $filePath = $file->storeAs('public' . $userId, $filename);
 
         $fileContents = file_get_contents($file->getRealPath());
 
@@ -122,7 +122,7 @@ class FileController extends Controller
         }
 
         if ($file->status == 0) {
-            $filePath = 'public/uploads/publicfiles' . $file->path;
+            $filePath = 'public' . $file->path;
             \Log::info('Complete File Path: ' . public_path($filePath));
 
 
@@ -147,28 +147,28 @@ class FileController extends Controller
         return response()->json(['message' => $e->getMessage()], 500);
     }
 }
-public function downloadFile( $fileName)
+public function downloadFile(Request $request)
 {
-    try {
-        $file = File::
-                   where('name', $fileName)
-                    ->where('status', 0)
-                    ->firstOrFail();
+    if (!$request->hasFile('file')) {
+        return response()->json(['message' => 'you have not selected any file'], 403);
 
-        $filePath = public_path($file->path);
-
-        // Set appropriate headers for the response
-        $headers = [
-            'Content-Type' => 'application/octet-stream',
-            'Content-Disposition' => 'attachment; filename="' . $file->name . '"',
-        ];
-
-        return Response::download($filePath, $file->name, $headers);
-    } catch (FileNotFoundException $e) {
-        return response()->json([
-            'message' => 'File not found',
-        ], 404);
     }
+
+    $file = $request->file('file');
+    $filename = $file->getClientOriginalName();
+    $publicFilePath = $file->getRealPath();
+
+    $desktopFolder = $request->input('desktop_folder');
+    $desktopPath = 'C:/Users/ASUS/Desktop/' . $desktopFolder . '/';
+    $desktopFile = $desktopPath . $filename;
+    $result = copy($publicFilePath, $desktopFile);
+
+    if (!$result) {
+        return response()->json(['message' => 'cannot download the file'], 403);
+
+    }
+    return response()->json(['message' => 'file download is completed'], 200);
+
 }
 
 }

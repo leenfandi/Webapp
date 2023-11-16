@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\File;
+use App\Models\Group;
+use App\Models\Groupofuser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +19,7 @@ use Spatie\PdfToText\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
 use Illuminate\Support\Facades\Response;
-
+use Illuminate\Support\Facades\Log;
 
 
 class FileController extends Controller
@@ -171,4 +173,46 @@ public function downloadFile(Request $request)
 
 }
 
+public function downloadManyFiles(Request $request)
+{
+    if (!$request->hasFile('files')) {
+        return response()->json(['message' => 'You have not selected any files'], 403);
+    }
+
+    $files = $request->file('files');
+    $desktopFolder = $request->input('desktop_folder');
+    $desktopPath = 'C:/Users/ASUS/Desktop/' . $desktopFolder . '/';
+    $uploadedFiles = [];
+
+   
+    if (!is_dir($desktopPath)) {
+        mkdir($desktopPath, 0777, true);
+    }
+
+
+    foreach ($files as $file) {
+        $filename = $file->getClientOriginalName();
+        $desktopFile = $desktopPath . $filename;
+
+
+        \Log::info('Public File Path: ' . $file->getRealPath());
+        \Log::info('Desktop File Path: ' . $desktopFile);
+
+
+        $result = \Storage::putFileAs($desktopPath, $file, $filename);
+
+        if (!$result) {
+          \Log::error('Error copying file: ' . $filename);
+            return response()->json(['message' => 'Cannot download one or more files'], 403);
+        }
+
+        $uploadedFiles[] = $filename;
+    }
+
+    \Log::info('Files download completed');
+
+    return response()->json(['message' => 'Files download completed', 'uploaded_files' => $uploadedFiles], 200);
 }
+
+
+        }

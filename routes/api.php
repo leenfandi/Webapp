@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\GroupController;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,8 +26,6 @@ Route::group([ 'prefix' => 'user', ], function ($router) {
     Route::post('register',[AuthController::class,'register']);
     Route::post('login',[AuthController::class,'login']);
     Route::post('logout',[AuthController::class,'logout']);
-    Route::post('updateprofile',[AuthController::class,'updateProfile']);
-    Route::post('change_password',[AuthController::class,'changePassword']);
     Route::delete('deletemyaccount',[AuthController::class,'DeleteMyAccount']);
 
  });
@@ -38,6 +37,9 @@ Route::group([ 'prefix' => 'user', ], function ($router) {
  Route::post('reservefile',[FileController::class,'reserveFile']);
  Route::delete('delete-free-files/{id}', [FileController::class, 'deleteFile']);
  Route::post('download', [FileController::class, 'downloadFile']);
+ Route::post('download_many_files',[FileController::class,'downloadManyFileS']);
+ Route::post('addgroup',[GroupController::class,'addgroup']);
+ Route::post('adduser_to_group',[GroupController::class,'adduser']);
  });
 
 

@@ -66,4 +66,13 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(File::class);
     }
+    /**
+     * Get all of thn groupofusers for the User
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function groupofusers(): HasMany
+    {
+        return $this->hasMany(Groupofuser::class);
+    }
 }

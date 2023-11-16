@@ -27,7 +27,7 @@ class AuthController extends Controller
     //    $this ->db_mysql= config('database.connections.mysql.database');
     // $this->middleware('auth:api',['except'=>['login','register']]);
    // }
-  
+
 
    public function register(Request $request)
    {
@@ -125,73 +125,7 @@ class AuthController extends Controller
     }
 
 
-    public function updateProfile(Request $request)
-    {
-
-        $input = $request->all();
-        $id = Auth::guard('api')->id();
-       $user = User::find($id);
-        $validator = validator($input, [
-            'name'=>'string',
-            'email'=>'string|email|unique:users',
-            'number'=>'string',
-            'image' => 'nullable',
-
-
-        ]);
-        if ($validator->fails()) {
-            return response()->json(['error'=>$validator->errors()]);
-        }
-
-        if($request->exists('name')){
-        $user->name= $input['name'] ;
-        }
-        if($request->exists('email')){
-        $user->email= $input['email'] ;
-        }
-
-
-
-
-
-        $user->save();
-
-        return response()->json(['user'=>$user,'msg'=>'user update succefully']);
-    }
-
-
-    public function changePassword (Request $request){
-
-        $validator = Validator::make($request->all(), [
-
-       'old_password' => 'required',
-       'password' => 'required|min:8',
-       'confirm_password' => 'required|same:password'
-
-]);
-        if ($validator->fails()) {
-           return response()->json([
-            'message'=> 'Validator fails',
-            'error'=>$validator->errors()]);
-}
-
-         $user = $request->user();
-         if(Hash::check($request->old_password , $user->password)){
-
-            $user->update([
-             'password' => Hash::make($request->password)
-            ]);
-            return response()->json([
-                'message' => 'Change password Successsfuly'
-                ] ,200);
-}
-
-           else {
-               return response()->json([
-                'message' => 'Old password does not matched'
-                ] ,400);
-}
-}
+   
     public function DeleteMyAccount()
     {
         $user = auth()->user();

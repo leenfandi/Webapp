@@ -37,9 +37,13 @@ Route::group([ 'prefix' => 'user', ], function ($router) {
  Route::post('reservefile',[FileController::class,'reserveFile']);
  Route::delete('delete-free-files/{id}', [FileController::class, 'deleteFile']);
  Route::post('download', [FileController::class, 'downloadFile']);
- Route::post('download_many_files',[FileController::class,'downloadManyFileS']);
+ //Route::post('download_many_files',[FileController::class,'downloadMultipleFiles']);
  Route::post('addgroup',[GroupController::class,'addgroup']);
  Route::post('adduser_to_group',[GroupController::class,'adduser']);
+ Route::post('addfile_to_group',[GroupController::class,'addfile_to_group']);
+ Route::delete('delete_file_from_group/{group_id}/{file_name}',[GroupController::class,'deletefile_from_group']);
+ Route::delete('delete_user_from_group/{user_id}/{group_id}',[GroupController::class,'deleteUserFromGroup']);
+ Route::delete('delete_group/{group_id}', [GroupController::class,'deleteGroupIfNoReservedFiles']);
  });
 
 

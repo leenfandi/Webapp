@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\File;
 use App\Models\Group;
 use App\Models\Groupofuser;
+use ZipArchive;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Log;
+
 
 
 class FileController extends Controller
@@ -173,7 +175,60 @@ public function downloadFile(Request $request)
 
 }
 
-public function downloadManyFiles(Request $request)
+
+
+//use Illuminate\Support\Facades\File;
+
+public function downloadMultipleFiles(Request $request)
+{
+    $zip = new ZipArchive();
+
+    if (!$request->has('files')) {
+        return response()->json(['message' => 'You have not selected any files'], 403);
+    }
+
+    $filePaths = $request->input('files');
+    $desktopFolder = $request->input('desktop_folder');
+    $desktopPath = 'C:/Users/ASUS/Desktop/' . $desktopFolder . '/';
+    $zipFileName = $desktopFolder . '.zip';
+    $zipFilePath = $desktopPath . $zipFileName;
+
+    try {
+        // Create the zip archive
+        if ($zip->open($zipFilePath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true) {
+            foreach ($filePaths as $filePath) {
+                $filename = basename($filePath);
+
+                // Check if the file exists
+                if (Storage::exists($filePath)) {
+                    $fileContent = Storage::get($filePath);
+
+                    // Add the file to the zip archive
+                    $zip->addFromString($filename, $fileContent);
+                } else {
+                    Log::error('File not found: ' . $filePath);
+                }
+            }
+            $zip->close();
+
+            // Return the zip file for download
+            $headers = [
+                'Content-Type' => 'application/zip',
+            ];
+            $fileResponse = Response::download($zipFilePath, $zipFileName, $headers);
+
+            return $fileResponse;
+        } else {
+            return response()->json(['message' => 'Error creating zip file'], 500);
+        }
+    } catch (\Exception $e) {
+        Log::error('Error creating zip file: ' . $e->getMessage());
+        return response()->json(['message' => 'An error occurred while creating the zip file'], 500);
+    }
+}
+
+
+/*public function downloadManyFiles(Request $request)
 {
     if (!$request->hasFile('files')) {
         return response()->json(['message' => 'You have not selected any files'], 403);
@@ -184,35 +239,41 @@ public function downloadManyFiles(Request $request)
     $desktopPath = 'C:/Users/ASUS/Desktop/' . $desktopFolder . '/';
     $uploadedFiles = [];
 
-   
-    if (!is_dir($desktopPath)) {
-        mkdir($desktopPath, 0777, true);
+    try {
+        Storage::makeDirectory($desktopPath);
+    } catch (\Exception $e) {
+        Log::error('Error creating directory: ' . $desktopPath . ': ' . $e->getMessage());
+        Log::error($e->getTraceAsString());
+        return response()->json(['message' => 'Error occurred while creating directory'], 500);
     }
-
 
     foreach ($files as $file) {
         $filename = $file->getClientOriginalName();
         $desktopFile = $desktopPath . $filename;
 
+        Log::info('Public File Path: ' . $file->getRealPath());
+        Log::info('Desktop File Path: ' . $desktopFile);
 
-        \Log::info('Public File Path: ' . $file->getRealPath());
-        \Log::info('Desktop File Path: ' . $desktopFile);
+        try {
+            $result = Storage::putFileAs($desktopPath, $file, $filename);
 
+            if (!$result) {
+                Log::error('Error copying file: ' . $filename);
+                return response()->json(['message' => 'Cannot download one or more files'], 403);
+            }
 
-        $result = \Storage::putFileAs($desktopPath, $file, $filename);
-
-        if (!$result) {
-          \Log::error('Error copying file: ' . $filename);
-            return response()->json(['message' => 'Cannot download one or more files'], 403);
+            $uploadedFiles[] = $filename;
+        } catch (\Exception $e) {
+            Log::error('Error copying file: ' . $filename . ': ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+            return response()->json(['message' => 'Error occurred while downloading files'], 500);
         }
-
-        $uploadedFiles[] = $filename;
     }
 
-    \Log::info('Files download completed');
+    Log::info('Files download completed');
 
     return response()->json(['message' => 'Files download completed', 'uploaded_files' => $uploadedFiles], 200);
-}
-
+}*/
 
         }
+

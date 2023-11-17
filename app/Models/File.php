@@ -25,4 +25,13 @@ class File extends Model
     {
         return $this->belongsTo(User::class);
     }
+    /**
+     * Get all of the groupoffiles for the File
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function groupoffiles()
+    {
+        return $this->hasMany(Groupoffile::class);
+    }
 }

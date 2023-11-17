@@ -22,4 +22,13 @@ public function groupofusers(): HasMany
 {
     return $this->hasMany(Groupofuser::class);
 }
+/**
+ * Get all of the groupoffiles for the Group
+ *
+ * @return \Illuminate\Database\Eloquent\Relations\HasMany
+ */
+public function groupoffiles(): HasMany
+{
+    return $this->hasMany(Groupoffile::class);
+}
 }

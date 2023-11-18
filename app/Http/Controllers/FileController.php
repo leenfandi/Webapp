@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 use App\Http\Controllers\FileController;
 use PhpOffice\PhpWord\IOFactory;
@@ -226,6 +227,58 @@ public function downloadMultipleFiles(Request $request)
         return response()->json(['message' => 'An error occurred while creating the zip file'], 500);
     }
 }
+
+public function showFilesInGroup(Request $request)
+{
+    $group_id = $request->input('group_id');
+    $group = Group::find($group_id);
+
+    if (!$group) {
+        return response()->json(['message' => 'Group not found'], 404);
+    }
+
+    $files = File::whereHas('groupoffiles', function ($query) use ($group_id) {
+        $query->where('group_id', $group_id);
+    })->orderBy('id', 'asc')->get();
+
+    $fileData = [];
+
+    foreach ($files as $file) {
+        $userData = null;
+
+        if ($file->status == 1) {
+
+            $reservedBy = $file->user;
+
+            if ($reservedBy) {
+                $userData = [
+                    'user_id' => $reservedBy->id,
+                    'username' => $reservedBy->name,
+
+                ];
+            }
+        }
+
+        $fileData[] = [
+            'file_id' => $file->id,
+            'file_name' => $file->name,
+            'file_path' =>$file->path,
+            'status' => $file->status,
+            'reserved_by' => $userData,
+
+        ];
+    }
+
+    return response()->json([
+        'message' => 'These are the files contained in the group',
+        'files' => $fileData,
+    ], 200);
+}
+
+
+
+
+
 
 
 /*public function downloadManyFiles(Request $request)

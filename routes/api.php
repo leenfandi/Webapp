@@ -44,6 +44,7 @@ Route::group([ 'prefix' => 'user', ], function ($router) {
  Route::delete('delete_file_from_group/{group_id}/{file_name}',[GroupController::class,'deletefile_from_group']);
  Route::delete('delete_user_from_group/{user_id}/{group_id}',[GroupController::class,'deleteUserFromGroup']);
  Route::delete('delete_group/{group_id}', [GroupController::class,'deleteGroupIfNoReservedFiles']);
+ Route::post('show_files_in_group',[FileController::class,'showFilesInGroup']);
  });
 
 

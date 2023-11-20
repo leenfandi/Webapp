@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\Support\Facades\Cache;
 
 
 class FileController extends Controller
@@ -90,17 +90,16 @@ class FileController extends Controller
 
     public function reserveFile(Request $request)
     {
-        $fileId =  new File();
-        $fileId->id = $request['id'];
+        $fileId = $request->input('id');
 
-        $file = File::find($fileId->id);
+        $file = File::where('id', $fileId)->lockForUpdate()->first();
 
         if (!$file) {
             return response()->json(['message' => 'File not found'], 404);
         }
 
         if ($file->status === 1) {
-            return response()->json(['message' => ' Sorry ,File already reserved'], 400);
+            return response()->json(['message' => 'Sorry, File already reserved'], 400);
         }
 
         $file->status = 1;
@@ -108,6 +107,26 @@ class FileController extends Controller
 
         return response()->json(['message' => 'File reserved successfully'], 200);
     }
+    public function cancelReservation(Request $request)
+{
+    $fileId = $request->input('id');
+
+    $file = File::where('id', $fileId)->lockForUpdate()->first();
+
+    if (!$file) {
+        return response()->json(['message' => 'File not found'], 404);
+    }
+
+    if ($file->status === 0) {
+        return response()->json(['message' => 'File is not reserved'], 400);
+    }
+
+    $file->status = 0;
+    $file->save();
+
+    return response()->json(['message' => 'Reservation canceled successfully'], 200);
+}
+
 
 
 
@@ -180,66 +199,51 @@ public function downloadFile(Request $request)
 
 //use Illuminate\Support\Facades\File;
 
-public function downloadMultipleFiles(Request $request)
+public function downloadFiles(Request $request)
 {
-    $zip = new ZipArchive();
-
-    if (!$request->has('files')) {
+    if (!$request->hasFile('files')) {
         return response()->json(['message' => 'You have not selected any files'], 403);
     }
 
-    $filePaths = $request->input('files');
+    $files = $request->file('files');
     $desktopFolder = $request->input('desktop_folder');
     $desktopPath = 'C:/Users/ASUS/Desktop/' . $desktopFolder . '/';
-    $zipFileName = $desktopFolder . '.zip';
-    $zipFilePath = $desktopPath . $zipFileName;
+    $downloadedFiles = [];
 
-    try {
-        // Create the zip archive
-        if ($zip->open($zipFilePath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true) {
-            foreach ($filePaths as $filePath) {
-                $filename = basename($filePath);
+    foreach ($files as $file) {
+        $filename = $file->getClientOriginalName();
+        $publicFilePath = $file->getRealPath();
+        $desktopFile = $desktopPath . $filename;
 
-                // Check if the file exists
-                if (Storage::exists($filePath)) {
-                    $fileContent = Storage::get($filePath);
+        $result = copy($publicFilePath, $desktopFile);
 
-                    // Add the file to the zip archive
-                    $zip->addFromString($filename, $fileContent);
-                } else {
-                    Log::error('File not found: ' . $filePath);
-                }
-            }
-            $zip->close();
-
-            // Return the zip file for download
-            $headers = [
-                'Content-Type' => 'application/zip',
-            ];
-            $fileResponse = Response::download($zipFilePath, $zipFileName, $headers);
-
-            return $fileResponse;
-        } else {
-            return response()->json(['message' => 'Error creating zip file'], 500);
+        if (!$result) {
+            return response()->json(['message' => 'Cannot download one or more files'], 403);
         }
-    } catch (\Exception $e) {
-        Log::error('Error creating zip file: ' . $e->getMessage());
-        return response()->json(['message' => 'An error occurred while creating the zip file'], 500);
+
+        $downloadedFiles[] = $filename;
     }
+
+    return response()->json(['message' => 'Files download completed', 'downloaded_files' => $downloadedFiles], 200);
 }
+
 
 public function showFilesInGroup(Request $request)
 {
     $group_id = $request->input('group_id');
-    $group = Group::find($group_id);
 
-    if (!$group) {
-        return response()->json(['message' => 'Group not found'], 404);
-    }
+    $cacheKey = 'files_in_group_' . $group_id;
+    $files = Cache::remember($cacheKey, now()->addMinutes(30), function () use ($group_id) {
+        $group = Group::find($group_id);
 
-    $files = File::whereHas('groupoffiles', function ($query) use ($group_id) {
-        $query->where('group_id', $group_id);
-    })->orderBy('id', 'asc')->get();
+        if (!$group) {
+            return [];
+        }
+
+        return File::whereHas('groupoffiles', function ($query) use ($group_id) {
+            $query->where('group_id', $group_id);
+        })->orderBy('id', 'asc')->get();
+    });
 
     $fileData = [];
 
@@ -247,14 +251,12 @@ public function showFilesInGroup(Request $request)
         $userData = null;
 
         if ($file->status == 1) {
-
             $reservedBy = $file->user;
 
             if ($reservedBy) {
                 $userData = [
                     'user_id' => $reservedBy->id,
                     'username' => $reservedBy->name,
-
                 ];
             }
         }
@@ -265,7 +267,6 @@ public function showFilesInGroup(Request $request)
             'file_path' =>$file->path,
             'status' => $file->status,
             'reserved_by' => $userData,
-
         ];
     }
 
@@ -273,6 +274,32 @@ public function showFilesInGroup(Request $request)
         'message' => 'These are the files contained in the group',
         'files' => $fileData,
     ], 200);
+
+}
+public function replaceFile(Request $request, $fileId)
+{
+
+    $existingFile = File::find($fileId);
+
+    if (!$existingFile) {
+        return response()->json(['message' => 'File not found'], 404);
+    }
+
+    $existingFile->name = $request->input('new_file_name');
+
+    if ($request->hasFile('new_file')) {
+        $newFile = $request->file('new_file');
+        $newFileName = $newFile->getClientOriginalName();
+
+
+        $newFile->storeAs('public', $newFileName);
+
+        $existingFile->path = 'public/' . $newFileName;
+    }
+
+    $existingFile->save();
+
+    return response()->json(['message' => 'File replaced successfully'], 200);
 }
 
 
